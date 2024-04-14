@@ -1,0 +1,97 @@
+#include <iostream>
+#include <conio.h>
+#include <windows.h>
+
+const int WIDTH = 20; // szerokość pola tekstowego
+const int HEIGHT = 1; // wysokość pola tekstowego
+const int INITIAL_X = 5; // początkowa pozycja X pola tekstowego
+const int INITIAL_Y = 5; // początkowa pozycja Y pola tekstowego
+
+void setCursorPosition(int x, int y) {
+    COORD coord;
+    coord.X = x;
+    coord.Y = y;
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+}
+
+void setConsoleTextColor(int color) {
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
+}
+
+void drawTextField(int x, int y, int width, int height) {
+    setCursorPosition(x, y);
+    for (int i = 0; i < width; ++i) {
+        std::cout << "-";
+    }
+    for (int i = 1; i < height - 1; ++i) {
+        setCursorPosition(x, y + i);
+        std::cout << "|";
+        setCursorPosition(x + width - 1, y + i);
+        std::cout << "|";
+    }
+    setCursorPosition(x, y + height - 1);
+    for (int i = 0; i < width; ++i) {
+        std::cout << "-";
+    }
+}
+
+int main() {
+    const int TEXT_FIELD_WIDTH = WIDTH + 2; // szerokość pola tekstowego z ramką
+    const int TEXT_FIELD_HEIGHT = HEIGHT + 2; // wysokość pola tekstowego z ramką
+    char textField[WIDTH] = {}; // tablica przechowująca tekst w polu tekstowym
+    int cursorPosition = 0; // aktualna pozycja kursora
+
+    // ukrycie migającego kursora
+    CONSOLE_CURSOR_INFO cursorInfo;
+    GetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cursorInfo);
+    cursorInfo.bVisible = false;
+    SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cursorInfo);
+
+    // ustawienie koloru tekstu
+    setConsoleTextColor(FOREGROUND_GREEN);
+
+    // narysowanie pola tekstowego
+    drawTextField(INITIAL_X, INITIAL_Y, TEXT_FIELD_WIDTH, TEXT_FIELD_HEIGHT);
+
+    while (true) {
+        // ustawienie kursora w odpowiednim miejscu
+        setCursorPosition(INITIAL_X + 1 + cursorPosition, INITIAL_Y + 1);
+
+        // obsługa ruchu kursora za pomocą strzałek lewo/prawo
+        if (_kbhit()) {
+            char key = _getch();
+            if (key == 224) {
+                key = _getch();
+                if (key == 75 && cursorPosition > 0) { // strzałka w lewo
+                    cursorPosition--;
+                } else if (key == 77 && cursorPosition < WIDTH - 1 && textField[cursorPosition] != '\0') { // strzałka w prawo
+                    cursorPosition++;
+                }
+            } else if (key == 8 && cursorPosition > 0) { // backspace
+                cursorPosition--;
+                textField[cursorPosition] = '\0';
+                std::cout << " ";
+                setCursorPosition(INITIAL_X + 1 + cursorPosition, INITIAL_Y + 1);
+            } else if (key == 13) { // Enter - zakończenie wprowadzania tekstu
+                break;
+            } else if (cursorPosition < WIDTH && (key >= 32 && key <= 126)) { // wprowadzenie znaku
+                textField[cursorPosition] = key;
+                std::cout << key;
+                cursorPosition++;
+            }
+        }
+    }
+
+    // wyświetlenie wprowadzonego tekstu
+    setConsoleTextColor(FOREGROUND_RED);
+    setCursorPosition(INITIAL_X + 1, INITIAL_Y + 1);
+    std::cout << textField;
+
+    // zakończenie programu
+    setConsoleTextColor(FOREGROUND_GREEN);
+    setCursorPosition(INITIAL_X + TEXT_FIELD_WIDTH + 2, INITIAL_Y + TEXT_FIELD_HEIGHT);
+    std::cout << "Press any key to exit...";
+    _getch();
+
+    return 0;
+}
